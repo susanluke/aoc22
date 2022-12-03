@@ -10,13 +10,13 @@
 (def moves2 {"A" :rock "B" :paper "C" :scissors
              "X" :lose "Y" :draw "Z" :win})
 
-(def results {:rock     {:paper :win :rock :draw :scissors :lose}
-              :paper    {:scissors :win :paper :draw :rock :lose}
-              :scissors {:rock :win :scissors :draw :paper :lose}})
+(def results {:rock     {:paper :win :rock :draw :scissors :lose
+                         :win :paper :lose :scissors :draw :rock}
+              :paper    {:scissors :win :paper :draw :rock :lose
+                         :win :scissors :lose :rock :draw :paper}
+              :scissors {:rock :win :scissors :draw :paper :lose
+                         :win :rock :lose :paper :draw :scissors}})
 
-(def results2 {:rock     {:win :paper :lose :scissors :draw :rock}
-               :paper    {:win :scissors :lose :rock :draw :paper}
-               :scissors {:win :rock :lose :paper :draw :scissors}})
 
 
 (def scores {:rock 1 :paper 2 :scissors 3
@@ -29,7 +29,7 @@
   (->> (string/split s #" ")
        (map moves)))
 
-(defn score [results [h1 h2]]
+(defn score [[h1 h2]]
   (+ (scores ((h1 results) h2))
      (scores h2)))
 
@@ -37,11 +37,11 @@
 (defn part1 []
   (->> (read-file f)
        (map (partial parse moves))
-       (map (partial score results))
+       (map score)
        (apply +)))
 
 (defn part2 []
   (->> (read-file f)
        (map (partial parse moves2))
-       (map (partial score results2))
+       (map score)
        (apply +)))

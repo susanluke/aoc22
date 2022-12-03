@@ -1,6 +1,7 @@
 (ns aoc22.day03
   (:require [clojure.java.io :as io]
-            [clojure.string :as string]))
+            [clojure.string :as string]
+            [clojure.set :as set]))
 
 (def f "input03.txt")
 
@@ -9,18 +10,7 @@
 
 (defn split-contents [s] (split-at (/ (count s) 2) s))
 
-(defn find-chars [s1 s2]
-  (reduce #(if ((set s1) %2)
-             (conj %1 %2)
-             %1)
-          '()
-          s2))
-
-(defn find-common [l acc]
-  (if (seq l)
-    (find-common (rest l)
-                 (find-chars acc (first l)))
-    acc))
+(defn find-chars [s1 s2] (set/intersection (set s1) (set s2)))
 
 (defn char-val [c]
   (let [n (int c)]
@@ -40,6 +30,6 @@
   (->> f
        read-file
        (partition 3)
-       (map #(find-common (rest %1) (first %1)))
+       (map #(reduce find-chars %))
        (map (comp char-val first))
        (apply +)))

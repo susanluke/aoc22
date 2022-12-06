@@ -1,6 +1,5 @@
 (ns aoc22.day02
-  (:require [clojure.java.io :as io]
-            [clojure.string :as string]))
+  (:require [clojure.string :as string]))
 
 (def f "input02.txt")
 
@@ -17,8 +16,6 @@
               :scissors {:rock :win :scissors :draw :paper :lose
                          :win :rock :lose :paper :draw :scissors}})
 
-
-
 (def scores {:rock 1 :paper 2 :scissors 3
              :win  6 :draw  3 :lose     0})
 
@@ -32,7 +29,6 @@
 (defn score [[h1 h2]]
   (+ (scores ((h1 results) h2))
      (scores h2)))
-
 
 (defn part1 []
   (->> (read-file f)

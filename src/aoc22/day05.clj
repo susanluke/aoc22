@@ -54,6 +54,5 @@
            (map first)
            (apply str)))))
 
-
 (def part-1 (part-x s make-moves))
 (def part-2 (part-x s make-moves-9001))

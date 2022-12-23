@@ -6,7 +6,12 @@
    [-2  1] [-1  1] [2  1] [1 1]
    [-2  0] [-1  0] [2  0] [1 0]
    [-2 -1] [-1 -1] [2 -1] [1 -1]
-   [-1 -2] [-1 -1] [0 -2] [0 -1] [1 -2] [1 -1]})
+   [-1 -2] [-1 -1] [0 -2] [0 -1] [1 -2] [1 -1]
+   [-2 -2] [-1 -1]
+   [-2  2] [-1  1]
+   [ 2 -2] [ 1 -1]
+   [ 2  2] [ 1  1]})
+(def start [0 0])
 
 (defn parse-line [l]
   (let [[_ d n] (re-matches #"([URLD]) (\d+)" l)]
@@ -43,5 +48,22 @@
        (map expand-move)
        flatten
        (reduce make-move {:h [0 0] :t [0 0] :visited #{[0 0]}})
+       :visited
+       count))
+
+(defn move-rope [{:keys [knots visited]} dirn]
+  (let [new-knots (reduce (fn [t h] (->> h
+                                        (make-tail-move (last t))
+                                        (conj t)))
+                          [(make-head-move (first knots) dirn)]
+                          (rest knots))]
+    {:knots   new-knots
+     :visited (conj visited (last new-knots))}))
+
+(defn pt2 [s]
+  (->> (parse-string s)
+       (map expand-move)
+       flatten
+       (reduce move-rope {:knots (vec (repeat 10 start)) :visited #{start}})
        :visited
        count))

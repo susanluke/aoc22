@@ -27,10 +27,6 @@ $ ls
 5626152 d.ext
 7214296 k")
 
-(comment
-  {:/ {:a {:e {}}
-       :d {}}})
-
 (def f "input07.txt")
 (defn read-file [f] (-> f io/resource slurp))
 (def input2 (read-file f))

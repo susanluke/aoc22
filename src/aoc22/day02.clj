@@ -1,5 +1,6 @@
 (ns aoc22.day02
-  (:require [clojure.string :as string]))
+  (:require [clojure.java.io :as io]
+            [clojure.string :as string]))
 
 (def f "input02.txt")
 

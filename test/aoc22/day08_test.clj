@@ -10,10 +10,12 @@
 33549
 35390")
 
-(def f "input08.txt")
-(defn read-file [f] (-> f io/resource slurp))
-(def input2 (read-file f))
+(def input2 (-> "input08.txt" io/resource slurp))
 
 (deftest part1
   (is (= 21 (sut/pt1 input)))
   (is (= 1713 (sut/pt1 input2))))
+
+(deftest part2
+  (is (= 8 (sut/pt2 input))
+      (= 268464 (sut/pt2 input2))))

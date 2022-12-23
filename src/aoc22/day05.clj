@@ -43,7 +43,7 @@
         (update (dec f) (partial drop n))
         (update (dec t) (partial concat movers)))))
 
-(defn part-x [s move-fn]
+(defn part-x [move-fn]
   (fn [s]
     (let [ss                  (string/split-lines s)
           [state-raw ins-raw] (split-with #(not (re-find #"^ 1" %)) ss)
@@ -54,5 +54,5 @@
            (map first)
            (apply str)))))
 
-(def part-1 (part-x s make-moves))
-(def part-2 (part-x s make-moves-9001))
+(def part-1 (part-x make-moves))
+(def part-2 (part-x make-moves-9001))

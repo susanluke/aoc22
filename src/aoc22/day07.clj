@@ -65,7 +65,7 @@
        (apply +)))
 
 (defn part2 [ss]
-  (let [sizes  (string->dir-sizes ss)
+  (let [sizes  (strings->dir-sizes ss)
         total-size (first sizes)
         need-to-free (- (+ update-size total-size)
                         disk-cap)]

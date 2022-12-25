@@ -37,3 +37,10 @@ Monkey 3:
 (deftest pt1
   (is (= 10605 (sut/pt1 input1)))
   (is (= 58322 (sut/pt1 input2))))
+
+(deftest pt2 (is (= 1 1)))
+
+;; takes a while!
+#_(deftest pt2
+    (is (= 2713310158 (sut/pt2 input1)))
+    (is (= 13937702909 (sut/pt2 input2))))

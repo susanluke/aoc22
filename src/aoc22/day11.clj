@@ -16,8 +16,7 @@
 (defn parse-op [s]
   (->> (string/split s #"\s")
        (map parse-op-element)
-       ;; TODO - don't need if wrapper here
-       (sort (fn [e1 e2] (if (#{* +} e1) true false)))))
+       (sort (fn [e1 e2] (boolean (#{* +} e1))))))
 
 (defn parse-monkey [s]
   (let [[_ m items op test t f] (re-matches #"Monkey (\d+):
@@ -33,40 +32,46 @@
                       :if-false        (read-string f)
                       :num-inspections 0}]))
 
-(defn monkey-op [op item]
-  (-> (->> (map #(if (= :old %) item %) op)
-           eval)
-      (/ 3)
-      int))
+(defn monkey-op [extra-op op item]
+  (->> (map #(if (= :old %) item %) op)
+       eval
+       extra-op))
 
-(defn monkey-inspect-item [{:keys [op test if-true if-false] :as monkey} item]
-  (let [new-item (monkey-op op item)]
+(defn monkey-inspect-item [extra-op {:keys [op test if-true if-false] :as monkey} item]
+  (let [new-item (monkey-op extra-op op item)]
     (if (= 0 (mod new-item test))
       [if-true new-item]
       [if-false new-item])))
 
-(defn monkey-turn [start-turn-state monkey-index]
+(defn monkey-turn [extra-op start-turn-state monkey-index]
   (let [{:keys [items] :as monkey} (get start-turn-state monkey-index)]
     (->> items
-         (map (partial monkey-inspect-item monkey))
+         (map (partial monkey-inspect-item extra-op monkey))
          (reduce (fn [state [to-monkey item]]
                    (update-in state [to-monkey :items] conj item))
                  (-> start-turn-state
                      (assoc-in [monkey-index :items] '())
                      (update-in [monkey-index :num-inspections] + (count items)))))))
 
-(defn monkey-round [state round-id]
-  (let [num-monkeys (count state)]
-    (reduce monkey-turn state (range num-monkeys))))
+(defn monkey-round [extra-op state round-id]
+  (reduce (partial monkey-turn extra-op) state (range (count state))))
 
-(defn pt1 [s]
+(defn ptx [s num-rounds gen-extra-op]
   (let [init-state (->> (split-monkeys s)
                         (map parse-monkey)
                         (into {}))
-        num-rounds 20]
-    (->> (reduce monkey-round init-state (range num-rounds))
+        extra-op   (gen-extra-op init-state)]
+    (->> (reduce (partial monkey-round extra-op) init-state (range num-rounds))
          vals
          (map :num-inspections)
          (sort >)
          (take 2)
          (apply *))))
+
+(defn pt1 [s]
+  (ptx s 20 (constantly (fn [n] (int (/ n 3))))))
+
+(defn pt2 [s]
+  (ptx s 10000 (fn [init-state]
+                 (let [divisor (->> init-state vals (map :test) (apply *))]
+                   (fn [n] (mod n divisor))))))

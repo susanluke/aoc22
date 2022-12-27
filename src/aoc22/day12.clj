@@ -56,10 +56,21 @@
                                           (map #(conj r %) reachable))
                           :visited (apply conj visited reachable)}))))
 
+(defn shortest-route [m start]
+  (-> (explore m end-val {:routes  (queue [[start]])
+                          :visited #{start}})
+      count
+      dec))
+
 (defn pt1 [s]
-  (let [m     (parse-map s)
-        start (find-start m)]
-    (-> (explore m end-val {:routes  (queue [[start]])
-                            :visited #{start}})
-        count
-        dec)))
+  (let [m     (parse-map s)]
+    (shortest-route m (find-start m))))
+
+(defn pt2 [s]
+  (let [m            (parse-map s)
+        ;; a hack - noticed that only the left col is able to reach the end.
+        ;; should really find all the 'a' points, and add a distance to visited
+        ;; datastructure to minimise re-work, but don't have much time!
+        start-points (map #(vec [% 0]) (range (count m)))]
+    (->> (map (partial shortest-route m) start-points)
+         (apply min))))

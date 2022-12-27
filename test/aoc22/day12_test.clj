@@ -15,3 +15,7 @@ abdefghi")
 (deftest pt1
   (is (= 31 (sut/pt1 input1)))
   (is (= 394 (sut/pt1 input2))))
+
+(deftest pt2
+  (is (= 29 (sut/pt2 input1)))
+  (is (= 388 (sut/pt2 input2))))

@@ -48,8 +48,13 @@
 
 (defn move-sand-grain [x-min grid [x y]]
   (cond
+    ;; sand blocked at sand-origin
+    (not= :. (get-in-grid x-min grid [x y]))
+    :void
+
+    ;; sand falls into endless void
     (= y (dec (count grid)))
-    :void ;; sand falls into endless void
+    :void
 
     ;; grain can move down
     (= :. (get-in-grid x-min grid [x (inc y)]))
@@ -65,9 +70,7 @@
 
     ;; grain can't move
     :else
-    (if (= sand-origin [x y])
-      :finished
-      [x y])))
+    [x y]))
 
 (defn add-sand-grain [x-min grid]
   (let [co-ords (move-sand-grain x-min grid sand-origin)]
@@ -75,13 +78,31 @@
       :finished
       (assoc-in-grid x-min :o grid co-ords))))
 
+(defn add-sand [x-min grid]
+  (->> (take-while #(not (= :finished %)) (iterate (partial add-sand-grain x-min) grid))
+       (map-indexed vector)
+       last
+       first))
+
 (defn pt1 [s]
   (let [cave-scan                     (parse-string s)
         [[x-min x-max] [y-min y-max]] (grid-dims cave-scan)
         empty-grid                    (initialise-grid [[x-min x-max]
                                                         [y-min y-max]])
         cave-grid                     (reduce (partial add-rock-path x-min) empty-grid cave-scan)]
-    (->> (take-while #(not (= :finished %)) (iterate (partial add-sand-grain x-min) cave-grid))
-         (map-indexed vector)
-         last
-         first)))
+    (add-sand x-min cave-grid)))
+
+
+(defn pt2 [s]
+  (let [cave-scan                     (parse-string s)
+        [[x-min x-max] [y-min y-max]] (grid-dims cave-scan)
+        ;; adjust grid size to cater for sand pile
+        y-max                         (+ y-max 2) ;; add two for floor
+        y-height                      (- y-max y-min)
+        x-min                         (- x-min y-height)
+        x-max                         (+ x-max y-height)
+        empty-grid                    (initialise-grid [[x-min x-max]
+                                                        [y-min y-max]]) ;; actual floor 2 deeper
+        empty-grid-with-floor         (assoc empty-grid y-max (vec (repeat (inc (- x-max x-min)) :#)))
+        cave-grid                     (reduce (partial add-rock-path x-min) empty-grid-with-floor cave-scan)]
+    (add-sand x-min cave-grid)))

@@ -12,3 +12,7 @@
 (deftest pt1
   (is (= 24 (sut/pt1 input1)))
   (is (= 873 (sut/pt1 input2))))
+
+(deftest pt2
+  (is (= 93 (sut/pt2 input1)))
+  (is (= 24813 (sut/pt2 input2))))

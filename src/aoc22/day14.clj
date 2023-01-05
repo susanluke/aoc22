@@ -102,7 +102,7 @@
         x-min                         (- x-min y-height)
         x-max                         (+ x-max y-height)
         empty-grid                    (initialise-grid [[x-min x-max]
-                                                        [y-min y-max]]) ;; actual floor 2 deeper
+                                                        [y-min y-max]])
         empty-grid-with-floor         (assoc empty-grid y-max (vec (repeat (inc (- x-max x-min)) :#)))
         cave-grid                     (reduce (partial add-rock-path x-min) empty-grid-with-floor cave-scan)]
     (add-sand x-min cave-grid)))

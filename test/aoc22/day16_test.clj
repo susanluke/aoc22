@@ -1,6 +1,7 @@
 (ns aoc22.day16-test
   (:require [clojure.test :refer :all]
             [clojure.java.io :as io]
+            [clojure.string :as string] ;; TODO - just while messing
             [aoc22.day16 :as sut]))
 
 (def input
@@ -17,7 +18,41 @@ Valve JJ has flow rate=21; tunnel leads to valve II")
 
 (def input2 (-> "input16.txt" io/resource slurp))
 
+(deftest pt1
+  (is (= 1651 (:pressure-released (sut/pt1 input))))
+  ;; Takes a few hours
+  ;;(is (= (1653 (sut/pt1 input2))))
+  )
+
 (comment
+  ;; input takes ~10s
+  {:pressure-released 1651,
+   :actions
+   [[7 [:valve-on :CC]]
+    [8 [:travel :CC]]
+    [9 [:travel :DD]]
+    [10 [:valve-on :EE]]
+    [11 [:travel :EE]]
+    [12 [:travel :FF]]
+    [13 [:travel :GG]]
+    [14 [:valve-on :HH]]
+    [15 [:travel :HH]]
+    [16 [:travel :GG]]
+    [17 [:travel :FF]]
+    [18 [:travel :EE]]
+    [19 [:travel :DD]]
+    [20 [:travel :AA]]
+    [21 [:travel :II]]
+    [22 [:valve-on :JJ]]
+    [23 [:travel :JJ]]
+    [24 [:travel :II]]
+    [25 [:travel :AA]]
+    [26 [:valve-on :BB]]
+    [27 [:travel :BB]]
+    [28 [:travel :CC]]
+    [29 [:valve-on :DD]]
+    [30 [:travel :DD]]]}
+
   ;; input2 takes a few hours
   {:pressure-released 1653,
    :actions
@@ -47,9 +82,3 @@ Valve JJ has flow rate=21; tunnel leads to valve II")
     [28 [:travel :ML]]
     [29 [:travel :RI]]
     [30 [:travel :RJ]]]})
-
-(deftest pt1
-  (is (= 1651 (:pressure-released (sut/pt1 input))))
-  ;; Takes a few hours
-  ;;(is (= (1653 (sut/pt1 input2))))
-  )

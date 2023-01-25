@@ -23,6 +23,9 @@ Valve JJ has flow rate=21; tunnel leads to valve II")
   ;; takes 3-4 seconds
   (is (= 1653 (:pressure-released (sut/pt1 input2)))))
 
+(deftest pt2
+  (is (= 1707 (:pressure-released (sut/pt2 input)))))
+
 (comment
   ;; input takes ~10s
   {:pressure-released 1651,

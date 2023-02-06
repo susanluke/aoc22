@@ -22,6 +22,9 @@
        (remove visited)
        (map (fn [next-n] (conj route next-n)))))
 
+(defn prune-choices [network-info node dests]
+  )
+
 (defn shortest-path
   "Takes:
   network-info - map of the form {:NN {:rate 3 :dests [:OO :PP]

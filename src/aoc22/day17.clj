@@ -2,27 +2,7 @@
   (:require [clojure.string :as string]))
 
 (def chamber-width 7)
-
 (def rock-shapes "####\n\n.#.\n###\n.#.\n\n..#\n..#\n###\n\n#\n#\n#\n#\n\n##\n##\n")
-(def rock-shapes
-  "####
-
-.#.
-###
-.#.
-
-..#
-..#
-###
-
-#
-#
-#
-#
-
-##
-##
-")
 
 (defn string->keywords [rl]
   (mapv (comp keyword str) rl))
@@ -71,7 +51,7 @@
 (defn max-rock-height [rock]
   (->> (map second rock)
        (apply max)
-       inc));; height is +1 max y
+       inc));; height is (max y)+1
 
 ;; TODO - need to record a more detailed topology - trace/recurse over the
 ;; surface of the rocks to record overhangs.
@@ -88,28 +68,37 @@
 (defn new-profile [old-profile new-rock]
   (map max old-profile (y-coords new-rock)))
 
-(defn normalize-profile [profile]
-  ;;(println "profile:" profile "normalized: " (concat [0] (map #(- % (first profile)) (rest profile))))
-  (concat [0] (map #(if (< 800 (abs (- (first profile) %)))
-                      800 ;; assume a 'cliff' if too large
-                      (abs (- (first profile) %)))
-                   (rest profile))))
+(defn normalize-profile [profile max-height]
+  (map #(if (< 800 (- max-height %))
+          800 ;; assume a 'cliff' if too large
+          (abs (- max-height %)))
+       profile))
 
 (defn check-cycle
   "check if we've got through a complete cycle of jets/rocks.  If we have, then "
-  [{:keys [max-height rock-count cycle-length profile profiles-seen] :as chamber-state}
+  [{:keys [max-height rock-count settled-rocks cycle-length profile profiles-seen] :as chamber-state}
    rock-after-jet]
-  (let [profile-new (normalize-profile (new-profile profile rock-after-jet))]
-    (if (zero? (mod rock-count cycle-length))
-      (do (println "At a cycle end: " rock-count (/ rock-count cycle-length) max-height )
-          (when (profiles-seen profile-new)
-            (println "cycle seen" profile-new "rock-count:" rock-count "max-height" max-height))
-          (-> chamber-state
-              (assoc :profile profile-new)
-              (assoc :profiles-seen (assoc profiles-seen profile-new {:rock-count rock-count
-                                                                      :max-height max-height}))))
+  ;; actually evaluate profile every now and then so stack doesn't get too large
+  (if (= 0 (mod rock-count 3000))
+    (println "profile:" profile))
 
-      ;; if not end of a cycle, just return 0
+  (let [profile-new            (new-profile profile rock-after-jet)
+        profile-new-normalized (normalize-profile profile-new max-height)]
+    (if (zero? (mod rock-count cycle-length))
+      (do
+        (println "At a cycle end: " rock-count (/ rock-count cycle-length) max-height "profile:" profile-new-normalized)
+        (when (profiles-seen profile-new-normalized)
+          (println "cycle seen"  "rock-count:" rock-count "max-height" max-height "norm profile:" profile-new-normalized))
+
+        (-> chamber-state
+            (assoc :profile profile-new)
+            (assoc :settled-rocks (->> settled-rocks
+                                       (remove (fn [[x y]] (< y (- max-height 1000))))
+                                       set))
+            (assoc-in [:profiles-seen profile-new-normalized] {:rock-count rock-count
+                                                               :max-height max-height})))
+
+      ;; if not end of a cycle, just update with the current profile
       (assoc chamber-state :profile profile-new))))
 
 (defn add-rock [{:keys [max-height settled-rocks jets rock-count profile profiles-seen cycle-length] :as chamber-state} rock]
@@ -125,8 +114,6 @@
             rock-after-jet (if (can-move? settled-rocks jet-move rock)
                              (move jet-move rock)
                              rock)]
-        ;;(println "rock-after-jet:" rock-after-jet)
-        ;;(println "settled-rocks:" settled-rocks)
         (if (can-move? settled-rocks :down rock-after-jet)
           (recur (move :down rock-after-jet) jets-rest settled-rocks max-height)
           (check-cycle (-> chamber-state
@@ -149,31 +136,5 @@
                   :profile       (repeat chamber-width -1)
                   :profiles-seen {}
                   :cycle-length  (* (count rocks) (count jet-pattern))
-                  ;;:cycle-length  40 ;; hard code to 40 for jet-pattern
                   })
          :max-height)))
-
-(defn print-rocks [settled-rocks]
-  (concat
-   (concat [\|] (repeat chamber-width \.) [\|])
-   (vec "+-------+")
-   ))
-
-
-(comment
-  " Do we care about r,c?  Read as r/c first (easy), convert to x,y and work
-with that for remainder of the challenge
-
-- - -> c
-|
-|
-v
-r
-
-y
-^
-|
-|
- - - > x
-
-")

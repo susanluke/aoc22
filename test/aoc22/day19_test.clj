@@ -11,7 +11,12 @@ Blueprint 2: Each ore robot costs 2 ore. Each clay robot costs 3 ore. Each obsid
   (-> "input19.txt" io/resource slurp))
 
 (deftest pt1-test
-  (is (= 33 (sut/pt1 blueprints-example 24))))
+  (is (= 33 (sut/pt1 blueprints-example 24)))
+  (is (= 851 (sut/pt1 blueprints 24))))
+
+(deftest p2-test
+  (is (= 3472 (sut/pt2 blueprints-example 32)))
+  (is (= 12160 (sut/pt2 blueprints 32))))
 
 (comment
   "Blueprint 1:

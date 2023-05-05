@@ -10,7 +10,8 @@
 (def initial-state [[0 0 0 0 0] [1 0 0 0 0]])
 
 ;; Arbitrary max states per simulated minute to explore
-(def max-states 350)
+(def pt1-max-states 3500)
+(def pt2-max-states 25000)
 
 (defn parse-blueprint [s]
   (->> s
@@ -68,26 +69,48 @@
     (not= (get-in state1 [1 obs-idx]) (get-in state2 [1 obs-idx]))
     (> (get-in state1 [1 obs-idx]) (get-in state2 [1 obs-idx]))
 
+    (not= (get-in state1 [0 nothing-idx]) (get-in state2 [0 nothing-idx]))
+    (< (get-in state1 [0 nothing-idx]) (get-in state2 [0 nothing-idx]))
+
+    ;; clay robots
+    (not= (get-in state1 [1 clay-idx]) (get-in state2 [1 clay-idx]))
+    (> (get-in state1 [1 clay-idx]) (get-in state2 [1 clay-idx]))
+
+    ;; ore robots
+    (not= (get-in state1 [1 ore-idx]) (get-in state2 [1 ore-idx]))
+    (> (get-in state1 [1 ore-idx]) (get-in state2 [1 ore-idx]))
+
+    ;; avoid states where we do a lot of nothing building
+    (not= (get-in state1 [1 nothing-idx]) (get-in state2 [1 nothing-idx]))
+    (< (get-in state1 [1 nothing-idx]) (get-in state2 [1 nothing-idx]))
+
     :default
     false))
 
-(defn filter-poor-states [states]
+(defn filter-poor-states [max-states states]
   (->> states
        (sort state-comparator)
        (take max-states)))
 
-(defn process-minute-for-states [bp states]
+(defn process-minute-for-states [bp max-states states]
   (->> (map (partial process-minute-for-state bp) states)
        (apply concat)
-       filter-poor-states))
+       (filter-poor-states max-states)))
 
-(defn find-max-geodes-for-blueprint [bp t]
-  (-> (->> (iterate (partial process-minute-for-states bp) [initial-state])
+(defn find-max-geodes-for-blueprint [bp max-states t]
+  (-> (->> (iterate (partial process-minute-for-states bp max-states) [initial-state])
            (drop t)
            ffirst)
       (get-in [0 geo-idx])))
 
 (defn pt1 [s t]
-  (->> (map find-max-geodes-for-blueprint (parse-blueprints s) (repeat t))
+  (->> (map find-max-geodes-for-blueprint (parse-blueprints s) (repeat pt1-max-states) (repeat t))
        (map-indexed (fn [i n] (* (inc i) n)))
        (apply +)))
+
+(defn pt2 [s t]
+  (->> (map find-max-geodes-for-blueprint
+            (take 3 (parse-blueprints s))
+            (repeat pt2-max-states)
+            (repeat t))
+       (apply *)))

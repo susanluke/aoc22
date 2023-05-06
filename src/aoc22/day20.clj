@@ -64,8 +64,7 @@
   ([l i]
    (if (zero? i)
      ""
-     (str (get-in l [i :digit]) ", " (print-digits l (get-in l [i :next]))))
-   ))
+     (str (get-in l [i :digit]) ", " (print-digits l (get-in l [i :next]))))))
 
 (defn find-zero-digit-index [l]
   (->> l
@@ -84,9 +83,9 @@
                             (assoc-in [last-index :next] 0))
         zero-index      (find-zero-digit-index data)
         plain-text-file (reduce mix-digit data (range (count data)))]
-    [(get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 1000) :digit])
-     (get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 2000) :digit])
-     (get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 3000) :digit])     ]
+    (apply + [(get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 1000) :digit])
+              (get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 2000) :digit])
+              (get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 3000) :digit])     ])
 
 
 
@@ -104,9 +103,9 @@
                             (assoc-in [last-index :next] 0))
         zero-index      (find-zero-digit-index data)
         plain-text-file (reduce mix-digit data (flatten (repeat 10 (range (count data)))))]
-    [(get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 1000) :digit])
-     (get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 2000) :digit])
-     (get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 3000) :digit])     ]
+    (apply + [(get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 1000) :digit])
+              (get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 2000) :digit])
+              (get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 3000) :digit])     ])
 
 
 

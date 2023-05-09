@@ -3,17 +3,12 @@
 
 (def pt2-decryption-key 811589153)
 
-(defn parse-file [s]
-  (->> s (string/split-lines) (map read-string)))
+(defn parse-file [s] (->> s (string/split-lines) (map read-string)))
 
-(defn add-links [i n]
-  {:digit n :prev (dec i) :next (inc i)})
-
-(defn index-after-move-fn [l]
-  (fn [i] (get-in l [i :next])))
+(defn add-links [i n] {:digit n :prev (dec i) :next (inc i)})
 
 (defn index-after-n-moves [l loop-size i-start num-moves]
-  (->> (iterate (index-after-move-fn l) i-start)
+  (->> (iterate (fn [i] (get-in l [i :next])) i-start)
        (drop (mod num-moves loop-size))
        first))
 
@@ -25,7 +20,6 @@
         (assoc-in [i-next :prev] i-prev))))
 
 (defn splice-in-digit
-  "splice i-out so it falls after i-in"
   [l i-ins i-ins-prev]
   (let [i-ins-next (get-in l [i-ins-prev :next])]
     (-> l
@@ -33,11 +27,6 @@
         (assoc-in [i-ins :next] i-ins-next)
         (assoc-in [i-ins-prev :next] i-ins)
         (assoc-in [i-ins-next :prev] i-ins))))
-
-(defn splice-digit [l i i-new-prev]
-  (-> l
-      (splice-out-digit i)
-      (splice-in-digit i i-new-prev)))
 
 (defn mix-digit [l i]
   (let [l-digit-removed (splice-out-digit l i)
@@ -58,12 +47,12 @@
                              (map (partial * decryption-key))
                              (map-indexed add-links)
                              vec)
-        last-index      (-> enc-file count dec)
+        loop-size       (count enc-file)
+        last-index      (dec loop-size)
+        zero-index      (find-zero-digit-index enc-file)
         l               (-> enc-file
                             (assoc-in [0 :prev] last-index)
                             (assoc-in [last-index :next] 0))
-        zero-index      (find-zero-digit-index l)
-        loop-size       (count l)
         plain-text-file (reduce mix-digit l (flatten (repeat num-mixes (range loop-size))))]
     (apply + (map #(get-in plain-text-file
                            [(index-after-n-moves plain-text-file loop-size zero-index %) :digit])

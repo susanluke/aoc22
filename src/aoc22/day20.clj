@@ -12,24 +12,10 @@
 (defn index-after-move-fn [l]
   (fn [i] (get-in l [i :next])))
 
-;; Need to be careful - if we go over the spot where we've removed something we'll count extra
-(defn prev-index-after-n-moves [l i num-moves]
-  (let [mod-num-moves (mod num-moves (dec (count l)))]
-    (if (zero? mod-num-moves)
-      (get-in l [i :prev])
-      (->> (iterate (index-after-move-fn l) i)
-           ;; NOT SURE about dec here - we many only need to do that for -ve numbers
-           ;; hmm, I think it's good as number of 'slots' decreases by 1
-           (drop (mod num-moves (dec (count l))))
-           first))))
-
-;; TODO - this is really the same function as above adjusted for final stage
-(defn index-after-n-moves [l i-start num-moves]
-  (let [mod-num-moves (mod num-moves (count l))]
-    (->> (iterate (index-after-move-fn l) i-start)
-         ;; TODO -we don't dec here .  Shoudl really pass in loop-size
-         (drop (mod num-moves (count l)))
-         first)))
+(defn index-after-n-moves [l loop-size i-start num-moves]
+  (->> (iterate (index-after-move-fn l) i-start)
+       (drop (mod num-moves loop-size))
+       first))
 
 (defn splice-out-digit [l i]
   (let [i-prev (get-in l [i :prev])
@@ -54,17 +40,12 @@
       (splice-in-digit i i-new-prev)))
 
 (defn mix-digit [l i]
-  (let [digit       (get-in l [i :digit])]
-    (splice-digit l i (prev-index-after-n-moves l i digit))))
-
-;; Helper function
-(defn print-digits
-  ([l]
-   (str (get-in l [0 :digit]) ", " (print-digits l (get-in l [0 :next]))))
-  ([l i]
-   (if (zero? i)
-     ""
-     (str (get-in l [i :digit]) ", " (print-digits l (get-in l [i :next]))))))
+  (let [l-digit-removed (splice-out-digit l i)
+        new-prev-i      (index-after-n-moves l-digit-removed
+                                             (dec (count l)) ;; -1 as one digit is 'removed'
+                                             (get-in l [i :prev])
+                                             (get-in l [i :digit]))]
+    (splice-in-digit l-digit-removed i new-prev-i)))
 
 (defn find-zero-digit-index [l]
   (->> l
@@ -72,8 +53,9 @@
        (filter (fn [[i v]] (zero? (:digit v))))
        ffirst))
 
-(defn pt1 [s]
+(defn ptx [s decryption-key]
   (let [enc-file        (->> (parse-file s)
+                             (map (partial * decryption-key))
                              (map-indexed add-links)
                              vec)
         last-index      (-> enc-file count dec)
@@ -82,14 +64,33 @@
                             (assoc-in [0 :prev] last-index)
                             (assoc-in [last-index :next] 0))
         zero-index      (find-zero-digit-index data)
-        plain-text-file (reduce mix-digit data (range (count data)))]
-    (apply + [(get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 1000) :digit])
-              (get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 2000) :digit])
-              (get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 3000) :digit])     ])
+        loop-size       (count data)
+        plain-text-file (reduce mix-digit data (flatten (repeat 10 (range (count data)))))]
+    (apply + [(get-in plain-text-file [(index-after-n-moves plain-text-file loop-size zero-index 1000) :digit])
+              (get-in plain-text-file [(index-after-n-moves plain-text-file loop-size zero-index 2000) :digit])
+              (get-in plain-text-file [(index-after-n-moves plain-text-file loop-size zero-index 3000) :digit])     ])
 
 
 
-    ))
+    )
+  )
+
+(defn pt1 [s]
+  (let [enc-file   (->> (parse-file s)
+                        (map-indexed add-links)
+                        vec)
+        last-index (-> enc-file count dec)
+        ;;TODO - data is a bad, generic name.
+        data       (-> enc-file
+                       (assoc-in [0 :prev] last-index)
+                       (assoc-in [last-index :next] 0))
+        zero-index (find-zero-digit-index data)
+        loop-size  (count data)
+        plain-text (reduce mix-digit data (range loop-size))]
+    ( +
+     (get-in plain-text [(index-after-n-moves plain-text loop-size zero-index 1000) :digit])
+     (get-in plain-text [(index-after-n-moves plain-text loop-size zero-index 2000) :digit])
+     (get-in plain-text [(index-after-n-moves plain-text loop-size zero-index 3000) :digit]))))
 
 (defn pt2 [s]
   (let [enc-file        (->> (parse-file s)
@@ -102,10 +103,11 @@
                             (assoc-in [0 :prev] last-index)
                             (assoc-in [last-index :next] 0))
         zero-index      (find-zero-digit-index data)
+        loop-size       (count data)
         plain-text-file (reduce mix-digit data (flatten (repeat 10 (range (count data)))))]
-    (apply + [(get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 1000) :digit])
-              (get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 2000) :digit])
-              (get-in plain-text-file [(index-after-n-moves plain-text-file zero-index 3000) :digit])     ])
+    (apply + [(get-in plain-text-file [(index-after-n-moves plain-text-file loop-size zero-index 1000) :digit])
+              (get-in plain-text-file [(index-after-n-moves plain-text-file loop-size zero-index 2000) :digit])
+              (get-in plain-text-file [(index-after-n-moves plain-text-file loop-size zero-index 3000) :digit])     ])
 
 
 

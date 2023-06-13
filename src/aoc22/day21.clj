@@ -39,7 +39,7 @@
 
       :else
       ;; try midway
-      (let [mid     (long (/ (+ hi lo) 2)) ;; TODO - extrapolating might be quicker
+      (let [mid     (long (/ (+ hi lo) 2))
             mid-val (get-val n (assoc monkeys :humn mid)) ]
         (cond
           (or (= lo mid) (= mid hi))
@@ -56,7 +56,6 @@
 (defn pt2 [s]
   (let [monkeys    (parse-string s)
         [l _ r]    (:root monkeys)
-        ;; in both examples, target is on the right and :humn only changes the
-        ;; left side
+        ;; in both examples, target is on rhs and :humn only changes the lhs
         target     (get-val r monkeys)]
     (bin-search-humn-num target l monkeys (- search-start) search-start)))

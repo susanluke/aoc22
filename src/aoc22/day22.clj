@@ -47,10 +47,7 @@
   (let [board-dims [(count board) (apply max (map count board))]
         new-loc    (mapv mod loc board-dims)]
     (if (not= loc new-loc)
-      (do
-        ;;        (println "*")
-        new-loc ;; we're outside boundary, try the modded location
-        )
+      new-loc
       loc ;; we're still in boundary, just move along
       )))
 
@@ -64,15 +61,16 @@
         :# last-valid-posn ;; blocked, so stick at last valid posn
         :. (recur board [dirn new-loc] [dirn new-loc] (dec move)) ;; move to space
         ;; 'skip' as it's a blank (:_) or nil
-        (let [new-loc-2 (new-loc-when-off-limits board new-loc)]
-          (if (and (not= new-loc new-loc-2 )
-                   (#{:. :_} (get-in board new-loc-2)))
+        (let [new-loc-after-oob (new-loc-when-off-limits board new-loc)]
+          (if (and (not= new-loc new-loc-after-oob )
+                   ;; dec for :_ as we'll hit valid ground soon
+                   (#{:. :_} (get-in board new-loc-after-oob)))
             (recur board
-                   [dirn new-loc-2]
+                   [dirn new-loc-after-oob]
                    last-valid-posn
                    (dec move))
             (recur board
-                   [dirn new-loc-2]
+                   [dirn new-loc-after-oob]
                    last-valid-posn
                    move)))))))
 

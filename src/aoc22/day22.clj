@@ -46,10 +46,32 @@
 (defn new-loc-when-off-limits [board loc]
   (let [board-dims [(count board) (apply max (map count board))]
         new-loc    (mapv mod loc board-dims)]
-    (if (not= loc new-loc)
-      new-loc
-      loc ;; we're still in boundary, just move along
-      )))
+    new-loc))
+
+(comment "
+situations when we're OOB
+* outside the 2d array - negative r/c or r/c greater than max [ nil val]
+* 'inside the 2d array',but off the end [nil val] <- why can't we wrap early? (going down, but want to keep in col)
+  - think we could only wrap on the base of direction
+* :_ - not in the space - just keep moving, but don't dec moves
+")
+(defn new-state-when-off-limits [board [dirn [r c :as loc]] move]
+  ;; returns [dirn loc] move
+  (let [loc-val (get-in board loc)]
+    ;; should we really dec move when 'wrapping' round board?
+    ;; we've got to do it when we re-enter valid territory anyway, so maybe
+    ;; it's just programmatically easier to do it now?
+    (cond
+      (and (nil? loc-val)
+           (#{:N :S} dirn))
+      [[dirn [r (mod c (count board))]] (dec move)]
+
+      (and (nil? loc-val)
+           (#{:E :W} dirn))
+      [[dirn [(mod r (count (nth board r))) c]] (dec move)]
+
+      (= :_ loc-val)
+      [[dirn [r c]] move])))
 
 (defn new-posn-walk
   [board [dirn loc] last-valid-posn move]

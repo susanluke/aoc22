@@ -27,22 +27,6 @@
 (defn initial-position [board]
   [:E [0 (->> board first (split-with #(not= :. %)) first count)]])
 
-;; todo: remove this when the new one works
-(defn new-posn-walk-old
-  [board [dirn loc] last-valid-posn move]
-  (println dirn loc last-valid-posn move)
-  (if (zero? move)
-    last-valid-posn
-    (let [board-dims [(count board) (apply max (map count board))]
-          new-loc (->> (dirn->move dirn)
-                       (map + loc)
-                       (#(mapv mod % board-dims)))]
-      (case (get-in board new-loc )
-        :# last-valid-posn ;; blocked, so stick at last valid posn
-        :. (recur board [dirn new-loc] [dirn new-loc] (dec move)) ;; move to space
-        ;; 'skip' as it's a blank (:_) or nil
-        (recur board [dirn new-loc] last-valid-posn move)))))
-
 (defn new-loc-when-off-limits [board loc]
   (let [board-dims [(count board) (apply max (map count board))]
         new-loc    (mapv mod loc board-dims)]
@@ -62,16 +46,27 @@ situations when we're OOB
     ;; we've got to do it when we re-enter valid territory anyway, so maybe
     ;; it's just programmatically easier to do it now?
     (cond
-      (and (nil? loc-val)
-           (#{:N :S} dirn))
-      [[dirn [r (mod c (count board))]] (dec move)]
+      (and (#{:N :S} dirn)
+           (not (<= 0 r (dec (count board)))))
+      (let [new-loc [(mod r (count board)) c]]
+        [[dirn new-loc] (if (#{:.} (get-in board new-loc))
+                          (dec move)
+                          move)])
 
-      (and (nil? loc-val)
-           (#{:E :W} dirn))
-      [[dirn [(mod r (count (nth board r))) c]] (dec move)]
+      (and (#{:E :W} dirn)
+           (not (<= 0 c (dec (count (nth board r))))))
+      (let [new-loc [r (mod c (count (nth board r)))]]
+        [[dirn new-loc] (if (#{:.} (get-in board new-loc))
+                          (dec move)
+                          move)])
 
-      (= :_ loc-val)
-      [[dirn [r c]] move])))
+      ;;(= :_ loc-val)
+      :else
+      (let [new-loc (->> (dirn->move dirn) (mapv + loc))]
+        [[dirn [r c]] (if (#{:.} (get-in board new-loc))
+                        ;; dec move if next transition is to a valid loc
+                        (dec move)
+                        move)]))))
 
 (defn new-posn-walk
   [board [dirn loc] last-valid-posn move]
@@ -83,18 +78,29 @@ situations when we're OOB
         :# last-valid-posn ;; blocked, so stick at last valid posn
         :. (recur board [dirn new-loc] [dirn new-loc] (dec move)) ;; move to space
         ;; 'skip' as it's a blank (:_) or nil
-        (let [new-loc-after-oob (new-loc-when-off-limits board new-loc)]
-          (if (and (not= new-loc new-loc-after-oob )
-                   ;; dec for :_ as we'll hit valid ground soon
-                   (#{:. :_} (get-in board new-loc-after-oob)))
-            (recur board
-                   [dirn new-loc-after-oob]
-                   last-valid-posn
-                   (dec move))
-            (recur board
-                   [dirn new-loc-after-oob]
-                   last-valid-posn
-                   move)))))))
+
+        ;; TODO: this let block works
+        #_(let [new-loc-after-oob (new-loc-when-off-limits board new-loc)]
+            (if (and (not= new-loc new-loc-after-oob )
+                     ;; dec for :_ as we'll hit valid ground soon
+                     (#{:. :_} (get-in board new-loc-after-oob)))
+              (recur board
+                     [dirn new-loc-after-oob]
+                     last-valid-posn
+                     (dec move))
+              (recur board
+                     [dirn new-loc-after-oob]
+                     last-valid-posn
+                     move)))
+
+        ;; TODO: this is the new let block (nb, fix name clash)
+        (let [[[new-dirn new-loc2] new-move] (new-state-when-off-limits board [dirn new-loc] move)]
+          (recur board
+                 [new-dirn new-loc2]
+                 last-valid-posn
+                 new-move))
+
+        ))))
 
 (defn new-posn-turn
   [board [dirn loc] move]
@@ -113,6 +119,17 @@ situations when we're OOB
         [final-dirn [final-r final-c]] (reduce (partial new-posn board)
                                                (initial-position board)
                                                moves)]
+    (+ (* 1000 (inc final-r))
+       (* 4 (inc final-c))
+       (dirn->score final-dirn))))
+
+(defn pt1-test [input]
+  (let [[board moves] (parse-input input)
+        posns         (reductions (partial new-posn board)
+                                  (initial-position board)
+                                  moves)
+        _ (clojure.pprint/pprint posns)
+        [final-dirn [final-r final-c]] (last posns)]
     (+ (* 1000 (inc final-r))
        (* 4 (inc final-c))
        (dirn->score final-dirn))))

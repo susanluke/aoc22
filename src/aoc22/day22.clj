@@ -27,109 +27,79 @@
 (defn initial-position [board]
   [:E [0 (->> board first (split-with #(not= :. %)) first count)]])
 
-(defn new-loc-when-off-limits [board loc]
-  (let [board-dims [(count board) (apply max (map count board))]
-        new-loc    (mapv mod loc board-dims)]
-    new-loc))
 
-(comment "
-situations when we're OOB
-* outside the 2d array - negative r/c or r/c greater than max [ nil val]
-* 'inside the 2d array',but off the end [nil val] <- why can't we wrap early? (going down, but want to keep in col)
-  - think we could only wrap on the base of direction
-* :_ - not in the space - just keep moving, but don't dec moves
-")
 (defn new-state-when-off-limits [board [dirn [r c :as loc]] move]
   ;; returns [dirn loc] move
   (let [loc-val (get-in board loc)]
-    ;; should we really dec move when 'wrapping' round board?
-    ;; we've got to do it when we re-enter valid territory anyway, so maybe
-    ;; it's just programmatically easier to do it now?
+    ;; NB, we (dec move) when we wrap, assuming we will step onto valid ground
+    ;; at some point.  Programatically easier to do it once at the actual wrap,
+    ;; rather that trying to detect point we step onto valid ground again.
     (cond
       (and (#{:N :S} dirn)
            (not (<= 0 r (dec (count board)))))
       (let [new-loc [(mod r (count board)) c]]
-        [[dirn new-loc] (if (#{:.} (get-in board new-loc))
-                          (dec move)
-                          move)])
+        [[dirn new-loc] (dec move)])
 
       (and (#{:E :W} dirn)
            (not (<= 0 c (dec (count (nth board r))))))
       (let [new-loc [r (mod c (count (nth board r)))]]
-        [[dirn new-loc] (if (#{:.} (get-in board new-loc))
-                          (dec move)
-                          move)])
+        [[dirn new-loc] (dec move)])
 
-      ;;(= :_ loc-val)
       :else
-      (let [new-loc (->> (dirn->move dirn) (mapv + loc))]
-        [[dirn [r c]] (if (#{:.} (get-in board new-loc))
-                        ;; dec move if next transition is to a valid loc
-                        (dec move)
-                        move)]))))
+      [[dirn [r c]] move])))
 
+;; TODO: overload this, so we dont' ahve to send it duplicate last valid posn
 (defn new-posn-walk
-  [board [dirn loc] last-valid-posn move]
-  ;;(println dirn loc last-valid-posn move)
+  [board oob-fn [dirn loc] last-valid-posn move]
   (if (zero? move)
     last-valid-posn
     (let [new-loc (->> (dirn->move dirn) (mapv + loc))]
       (case (get-in board new-loc )
-        :# last-valid-posn ;; blocked, so stick at last valid posn
-        :. (recur board [dirn new-loc] [dirn new-loc] (dec move)) ;; move to space
-        ;; 'skip' as it's a blank (:_) or nil
+        ;; blocked, so stick at last valid posn
+        :# last-valid-posn
 
-        ;; TODO: this let block works
-        #_(let [new-loc-after-oob (new-loc-when-off-limits board new-loc)]
-            (if (and (not= new-loc new-loc-after-oob )
-                     ;; dec for :_ as we'll hit valid ground soon
-                     (#{:. :_} (get-in board new-loc-after-oob)))
-              (recur board
-                     [dirn new-loc-after-oob]
-                     last-valid-posn
-                     (dec move))
-              (recur board
-                     [dirn new-loc-after-oob]
-                     last-valid-posn
-                     move)))
+        ;; move to space
+        :. (recur board oob-fn [dirn new-loc] [dirn new-loc] (dec move))
 
-        ;; TODO: this is the new let block (nb, fix name clash)
-        (let [[[new-dirn new-loc2] new-move] (new-state-when-off-limits board [dirn new-loc] move)]
-          (recur board
-                 [new-dirn new-loc2]
-                 last-valid-posn
-                 new-move))
-
-        ))))
+        ;; out of bounds - call new-state-when-off-limits, to work out where we
+        ;; should go, and recur
+        (let [[[new-dirn new-loc2] new-move]
+              (oob-fn board [dirn new-loc] move)]
+          (recur board oob-fn [new-dirn new-loc2] last-valid-posn new-move))))))
 
 (defn new-posn-turn
   [board [dirn loc] move]
   [(if (= :R move) (turn-right dirn) (turn-left dirn)) loc])
 
 (defn new-posn
-  ([board posn move]
-   (new-posn board posn posn move))
-  ([board [dirn [r c :as loc] :as posn] last-valid-posn move]
+  ([board oob-fn posn move]
+   (new-posn board oob-fn posn posn move))
+  ([board oob-fn [dirn [r c :as loc] :as posn] last-valid-posn move]
    (if (int? move)
-     (new-posn-walk board posn last-valid-posn move)
+     (new-posn-walk board oob-fn posn last-valid-posn move)
      (new-posn-turn board posn move))))
 
 (defn pt1 [input]
   (let [[board moves] (parse-input input)
-        [final-dirn [final-r final-c]] (reduce (partial new-posn board)
-                                               (initial-position board)
-                                               moves)]
+
+        [final-dirn [final-r final-c]]
+        (reduce (partial new-posn
+                         board new-state-when-off-limits)
+                (initial-position board)
+                moves)]
     (+ (* 1000 (inc final-r))
        (* 4 (inc final-c))
        (dirn->score final-dirn))))
 
-(defn pt1-test [input]
+(defn pt2 [input oob-fn]
   (let [[board moves] (parse-input input)
-        posns         (reductions (partial new-posn board)
-                                  (initial-position board)
-                                  moves)
-        _ (clojure.pprint/pprint posns)
-        [final-dirn [final-r final-c]] (last posns)]
+
+        [final-dirn [final-r final-c]]
+        (reduce (partial new-posn
+                         board oob-fn)
+                (initial-position board)
+                moves)]
+    (println "final position:" final-r final-c final-dirn)
     (+ (* 1000 (inc final-r))
        (* 4 (inc final-c))
        (dirn->score final-dirn))))
